@@ -85,10 +85,20 @@ async function toIntelinoSession(session) {
         await sendCommand(0x65, Number(sound) | (Number(lights) << 1));
     }
     async function setHeadlightColor(front, back) {
-        sendCommand(0xb4, (front ? 0b010 : 0) | (back ? 0b100 : 0), ...(front ?? [0, 0, 0]), ...(back ?? [0, 0, 0]));
+        await sendCommand(0xb4, (front ? 0b010 : 0) | (back ? 0b100 : 0), ...(front ?? [0, 0, 0]), ...(back ?? [0, 0, 0]));
     }
     async function setNextSplitSteeringDecision(nextDecision) {
-        sendCommand(0xbf, nextDecision === "left" ? 0b01 : nextDecision === "right" ? 0b10 : 0b11);
+        await sendCommand(0xbf, nextDecision === "left" ? 0b01 : nextDecision === "right" ? 0b10 : 0b11);
+    }
+    async function playSound(sound) {
+        const soundBytes = {
+            horn1: [0x16, 0x80],
+            bell: [0x17, 0x00],
+            horn2: [0x17, 0x80],
+            policeHorn: [0x18, 0x00],
+            alarm: [0x18, 0x80],
+        };
+        await sendCommand(0x24, 0x00, ...soundBytes[sound], 0x00, 0x00);
     }
     return {
         startStreaming,
@@ -103,6 +113,7 @@ async function toIntelinoSession(session) {
         driveAtSpeedLevel,
         setHeadlightColor,
         setNextSplitSteeringDecision,
+        playSound,
         getVersionInfo,
         getMacAddress,
         getUuid,

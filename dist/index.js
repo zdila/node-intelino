@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.intelinoBufferToJson = exports.feedbackTypes = exports.colors = exports.directions = void 0;
+exports.intelinoBufferToJson = exports.sounds = exports.feedbackTypes = exports.colors = exports.directions = void 0;
 exports.directions = [
     "current",
     "forward",
@@ -30,6 +30,13 @@ const decisions = [
     "all",
 ];
 exports.feedbackTypes = ["none", "movementStop", "endRoute"];
+exports.sounds = [
+    "horn1",
+    "bell",
+    "horn2",
+    "policeHorn",
+    "alarm",
+];
 function toHex(dv, separator = " ", offset = 0) {
     return [
         ...new Uint8Array(dv.buffer, dv.byteOffset + offset, dv.byteLength - offset),

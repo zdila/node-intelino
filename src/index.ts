@@ -39,6 +39,16 @@ export const feedbackTypes = ["none", "movementStop", "endRoute"] as const;
 
 export type FeedbackType = typeof feedbackTypes[number];
 
+export const sounds = [
+  "horn1",
+  "bell",
+  "horn2",
+  "policeHorn",
+  "alarm",
+] as const;
+
+export type Sound = typeof sounds[number];
+
 function toHex(dv: DataView, separator = " ", offset = 0) {
   return [
     ...new Uint8Array(

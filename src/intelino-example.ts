@@ -1,5 +1,13 @@
 import { initBle, Session } from "@mz/bluez/dist/ble";
 import { toIntelinoSession } from "./intelinoSession";
+import readline from "readline";
+import { Sound, sounds } from ".";
+
+function sleep(delay: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, delay);
+  });
+}
 
 initBle()
   .then(({ createSession }) => startSession(createSession()))
@@ -28,46 +36,93 @@ async function startSession(session: Session) {
 
   console.log("Connected");
 
-  const {
-    setTopLedColor,
-    getVersionInfo,
-    on,
-    getStatsLifetimeOdometer,
-    getMacAddress,
-    getUuid,
-    driveAtSpeedLevel,
-    stopDriving,
-  } = await toIntelinoSession(session);
+  const is = await toIntelinoSession(session);
 
-  on("message", (m) => {
-    switch (m.type) {
-      case "EventSplitDecision":
-        console.log(m);
+  readline.emitKeypressEvents(process.stdin);
 
-        break;
-      case "EventColorChanged":
-        if (m.color === "magenta") {
-          console.log("Stopping");
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+  }
 
-          stopDriving("endRoute").finally(() => {
-            console.log("Closing");
+  let speed: 0 | 1 | 2 | 3 = 2;
 
-            session.close();
-          });
-        }
+  process.stdin.on("keypress", (_str, key) => {
+    if (key.name === "space") {
+      is.stopDriving();
+    } else if (key.name === "up") {
+      if (speed < 3) {
+        speed++;
+      }
 
-        break;
+      is.driveAtSpeedLevel(speed);
+    } else if (key.name === "down") {
+      if (speed > 0) {
+        speed--;
+      }
+
+      is.driveAtSpeedLevel(speed);
+    } else if (key.ctrl && key.name === "c") {
+      process.exit();
     }
   });
 
-  await setTopLedColor(255, 0, 255);
+  const sd = [1, 0, 1, 0, 0];
 
-  console.log("Version", await getVersionInfo());
-  console.log("MAC", await getMacAddress());
-  console.log("UUID", await getUuid());
-  console.log("ODO", await getStatsLifetimeOdometer());
+  let i = 0;
 
-  await driveAtSpeedLevel(2);
+  is.on("message", (m) => {
+    switch (m.type) {
+      case "EventSplitDecision":
+        console.log("SD");
 
-  // await pauseDriving(10, true);
+        i++;
+
+        is.setNextSplitSteeringDecision(
+          sd[i % sd.length] ? "left" : "straight"
+        );
+
+        break;
+      // case "EventColorChanged":
+      //   if (m.color === "red") {
+      //     is.driveAtSpeedLevel(1);
+      //   } else if (m.color === "yellow") {
+      //     is.driveAtSpeedLevel(2);
+      //   } else if (m.color === "green") {
+      //     is.driveAtSpeedLevel(3);
+      //   }
+
+      //   break;
+    }
+  });
+
+  // await is.setSnapCommandExecution(false);
+
+  // setInterval(() => {
+  //   is.setTopLedColor(
+  //     Math.floor(Math.random() * 256),
+  //     Math.floor(Math.random() * 256),
+  //     Math.floor(Math.random() * 256)
+  //   );
+  // }, 100);
+
+  console.log("Version", await is.getVersionInfo());
+  console.log("MAC", await is.getMacAddress());
+  console.log("UUID", await is.getUuid());
+  console.log("ODO", await is.getStatsLifetimeOdometer());
+
+  // await is.driveAtSpeedLevel(speed);
+
+  // for (;;) {
+  //   await sleep(5000);
+
+  //   await is.pauseDriving(30, true);
+  // }
+
+  for (const sound of sounds) {
+    await is.playSound(sound);
+
+    await sleep(2000);
+  }
+
+  session.close();
 }

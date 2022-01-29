@@ -10,6 +10,7 @@ import {
   intelinoBufferToJson,
   MacAddressMessage,
   Message,
+  Sound,
   StatsLifetimeOdometerMessage,
   TrainUuidMessage,
   VersionDetailMessage,
@@ -169,7 +170,7 @@ export async function toIntelinoSession(session: Session) {
     front: [r: number, g: number, b: number] | null | undefined,
     back: [r: number, g: number, b: number] | null | undefined
   ) {
-    sendCommand(
+    await sendCommand(
       0xb4,
       (front ? 0b010 : 0) | (back ? 0b100 : 0),
       ...(front ?? [0, 0, 0]),
@@ -180,10 +181,22 @@ export async function toIntelinoSession(session: Session) {
   async function setNextSplitSteeringDecision(
     nextDecision: "left" | "right" | "straight"
   ) {
-    sendCommand(
+    await sendCommand(
       0xbf,
       nextDecision === "left" ? 0b01 : nextDecision === "right" ? 0b10 : 0b11
     );
+  }
+
+  async function playSound(sound: Sound) {
+    const soundBytes: Record<Sound, [number, number]> = {
+      horn1: [0x16, 0x80],
+      bell: [0x17, 0x00],
+      horn2: [0x17, 0x80],
+      policeHorn: [0x18, 0x00],
+      alarm: [0x18, 0x80],
+    };
+
+    await sendCommand(0x24, 0x00, ...soundBytes[sound], 0x00, 0x00);
   }
 
   return {
@@ -199,6 +212,7 @@ export async function toIntelinoSession(session: Session) {
     driveAtSpeedLevel,
     setHeadlightColor,
     setNextSplitSteeringDecision,
+    playSound,
     getVersionInfo,
     getMacAddress,
     getUuid,
